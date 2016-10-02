@@ -23,10 +23,14 @@
   to { transform: rotate(360deg); }
 }
 
-.progress-button button:hover {
-	background-color: #1ECD97 !important; 
-	color: #fff !important;
-}
+/*.progress-button button:hover {*/
+/*	background-color: #1ECD97 !important; */
+/*	color: #fff !important;*/
+/*}*/
+
+/*.loading.progress-button button {*/
+/*	background-color: transparent !important;*/
+/*}*/
 
 .progress-button button:focus {
 	outline: none !important;

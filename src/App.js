@@ -7,6 +7,9 @@ class App extends Component {
     super(props);
     this.state = {btnStatus: "initial", progress: 0, hover: false};
     this.handleProgresButtonClick.bind(this);
+    this.preparePath.bind(this);
+    this.undrawStroke.bind(this);
+    this.prepareButtonHoverStyle.bind(this);
     this.stop.bind(this);
     this.styles = {
       initial: {
@@ -25,6 +28,7 @@ class App extends Component {
         	width: "250px",
         	height: "70px",
         	border: "2px solid #1ECD97",
+        	borderColor: "#1ECD97",
         	borderRadius: "40px",
         	background: "transparent",
         	color: "#1ECD97",
@@ -52,7 +56,7 @@ class App extends Component {
         },
         progressButton__Svg_progressCircle__Path: {
         	stroke: "#1ECD97",
-        	strokeWidth: "5"
+        	strokeWidth: "5",
         },
         progressButton__Svg_checkmark__Path: {
         	stroke: "#fff",
@@ -140,14 +144,6 @@ class App extends Component {
         loading: {...initial.progressButton__Button, ...loading.progressButton__Button},
         success: {...initial.progressButton__Button, ...success.progressButton__Button},
         error: {...initial.progressButton__Button, ...error.progressButton__Button},
-        hover:  {
-          backgroundColor: "#1ECD97", 
-        	color: "#fff"
-        },
-        noHover: {
-          backgroundColor: "transparent",
-          color: "#1ECD97"
-        }
       },
       progressButton__Button__Span: {
         initial: initial.progresButton__Button__Span,
@@ -162,8 +158,8 @@ class App extends Component {
         error: initial.progressButton__Svg,
       },
       progressButton__Svg_progressCircle__Path: {
-        initial: initial.progressButton__Svg__Path,
-        loading: {...initial.progressButton__Svg__Path, ...loading.progressButton__Svg_progressCircle__Path},
+        initial: {...initial.progressButton__Svg__Path, ...initial.progressButton__Svg_progressCircle__Path},
+        loading: {...initial.progressButton__Svg__Path, ...initial.progressButton__Svg_progressCircle__Path, ...loading.progressButton__Svg_progressCircle__Path},
         success: initial.progressButton__Svg__Path,
         error: initial.progressButton__Svg__Path,
       },
@@ -183,13 +179,46 @@ class App extends Component {
     
   }
   
+  prepareButtonHoverStyle(style) {
+    const { hover } = this.state;
+    switch (this.state.btnStatus) {
+      case "initial":
+        return hover ? {...style, ...{ backgroundColor: "#1ECD97", color: "#fff"} } : {...style, backgroundColor: "transparent" };
+      case "loading":
+        return {...style, ...{backgroundColor: 'transparent'} }; 
+      case "success":
+        return {...style, ...{backgroundColor: '#1ECD97'} }; 
+      default:
+        return style;
+    }
+  }
+  
   shouldComponentUpdate(nextProps, nextState) {
     // don't rerender while progress loading indicator
-    return nextState.progress % 1 === 0;
+    return nextState.progress % 1 === 0 && nextState.progress !== 1;
   }
   
   componentDidUpdate() {
-    console.log("component update");
+    if (this.state.btnStatus === 'success') {
+      this.undrawStroke();
+      setTimeout(() => {
+        this.setState({btnStatus: 'initial'});
+      }, 2000);
+    }
+  }
+  
+  componentDidMount() {
+    this.circleLength = this.refs.circlePath.getTotalLength();
+    this.preparePath();
+    this.undrawStroke();
+  }
+  
+  preparePath() {
+    this.refs.circlePath.style.strokeDasharray = this.circleLength;
+  }
+  
+  undrawStroke() {
+    this.refs.circlePath.style.strokeDashoffset = this.circleLength;
   }
   
   stop() {
@@ -198,8 +227,10 @@ class App extends Component {
   
   handleProgresButtonClick(btnId) {
     let interval = setInterval( () => {
+      var progress = Math.min( this.state.progress + Math.random() * 0.1, 1 );
+      this.refs.circlePath.style.strokeDashoffset = this.circleLength*(1 - progress);
       this.setState({
-        progress: Math.min( this.state.progress + Math.random() * 0.1, 1 )
+        progress: progress
       });
 			if( this.state.progress === 1 ) {
 				this.stop(1);
@@ -211,23 +242,20 @@ class App extends Component {
   
   render() {
     
+    
     const preparedStyles = this.preparedStyles;
     const status = this.state.btnStatus;
-    const hover = this.state.hover;
 
     const progressButton                           = preparedStyles.progressButton[status];
-    let progressButton__Button                     = preparedStyles.progressButton__Button[status];
+    const progressButton__Button                   = this.prepareButtonHoverStyle(preparedStyles.progressButton__Button[status]);
     const progressButton__Button__Span             = preparedStyles.progressButton__Button__Span[status];
     const progressButton__Svg                      = preparedStyles.progressButton__Svg[status];
     const progressButton__Svg_progressCircle__Path = preparedStyles.progressButton__Svg_progressCircle__Path[status];
     const progressButton__Svg_cross__Path          = preparedStyles.progressButton__Svg_cross__Path[status];
     const progressButton__Svg_checkmark__Path      = preparedStyles.progressButton__Svg_checkmark__Path[status];
     
-    progressButton__Button = hover && status === "initial" ? 
-      {...progressButton__Button, ...preparedStyles.progressButton__Button.hover} :
-      {...progressButton__Button, ...preparedStyles.progressButton__Button.noHover};
-    
-    progressButton__Button = status === "success" ? {...progressButton__Button, ...preparedStyles.progressButton__Button.success} : progressButton__Button;
+    console.log("render, state: ", this.state);
+    // console.log("progress button style", progzsressButton__Button);
     
     return (
       <div className="App">
@@ -239,7 +267,6 @@ class App extends Component {
       	  style={progressButton}
       	>
 					<button
-					  className={status === "loading" ? "loading": ""}
 					  style={progressButton__Button} 
 					  onClick={() => {
               this.handleProgresButtonClick("btn1");  					    
@@ -259,7 +286,7 @@ class App extends Component {
 					  width="70" 
 					  height="70"
 					>
-					  <path style={progressButton__Svg_progressCircle__Path} d="m35,2.5c17.955803,0 32.5,14.544199 32.5,32.5c0,17.955803 -14.544197,32.5 -32.5,32.5c-17.955803,0 -32.5,-14.544197 -32.5,-32.5c0,-17.955801 14.544197,-32.5 32.5,-32.5z"/>
+					  <path style={progressButton__Svg_progressCircle__Path} ref="circlePath" id="circlePath" d="m35,2.5c17.955803,0 32.5,14.544199 32.5,32.5c0,17.955803 -14.544197,32.5 -32.5,32.5c-17.955803,0 -32.5,-14.544197 -32.5,-32.5c0,-17.955801 14.544197,-32.5 32.5,-32.5z"/>
 					</svg>
 					<svg 
 					  style={progressButton__Svg} 
